@@ -1,0 +1,9 @@
+streamlit
+pandas
+numpy
+torch
+transformers
+scikit-learn
+joblib
+folium
+streamlit-folium
