@@ -171,7 +171,7 @@ if page == "🌍 Глобальный мониторинг":
                 "html": "<b>{Страна}</b><br>Зафиксировано: {Инцидентов} шт.<br>Доминирует: {Угроза}",
                 "style": {"backgroundColor": "#222222", "color": "white", "borderRadius": "5px", "padding": "10px"}
             },
-            map_style="mapbox://styles/mapbox/dark-v11" # Строгая темная тема
+            map_style="dark" # ИСПРАВЛЕНО: Встроенная темная тема без API-ключа
         )
         
         st.pydeck_chart(r)
