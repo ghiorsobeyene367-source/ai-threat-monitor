@@ -11,10 +11,10 @@ import folium
 from streamlit_folium import st_folium
 from sklearn.metrics.pairwise import cosine_similarity # Добавлено для детектора аномалий
 
-# --- 1. НАСТРОЙКИ СТРАНИЦЫ ---
+
 st.set_page_config(page_title="AI Threat Monitor", page_icon="🛡️", layout="wide")
 
-# --- 2. АРХИТЕКТУРА НЕЙРОСЕТИ ---
+
 class AIThreatNet(nn.Module):
     def __init__(self, input_size=768, num_classes=4):
         super(AIThreatNet, self).__init__()
@@ -33,7 +33,7 @@ class AIThreatNet(nn.Module):
         x = self.fc3(x)
         return x
 
-# --- 3. ЗАГРУЗКА МОДЕЛЕЙ И ДАННЫХ ---
+
 @st.cache_resource
 def load_models():
     device = torch.device('cpu') 
@@ -69,7 +69,7 @@ CLUSTER_NAMES = {
     3: "Deepfake и медиафальсификации"
 }
 
-# --- 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+
 def clean_text(text):
     if not isinstance(text, str): return ""
     text = re.sub(r'<[^>]+>', ' ', text)
@@ -89,14 +89,12 @@ def get_embedding(text):
         embedding = sum_emb / sum_mask
     return embedding
 
-# --- 5. БОКОВАЯ ПАНЕЛЬ ---
+
 st.sidebar.title("🛡️ AI Threat System")
-st.sidebar.info("Система мониторинга злонамеренного использования ИИ в инфопространстве.")
+st.sidebar.info("Информационно-аналитическая система мониторинга злонамеренного использования ИИ")
 page = st.sidebar.radio("Навигация:", ["🌍 Глобальный мониторинг", "🔍 Анализ инцидента"])
 
-# =====================================================================
-# СТРАНИЦА 1: КАРТА И СТАТИСТИКА
-# =====================================================================
+
 if page == "🌍 Глобальный мониторинг":
     st.title("Глобальный мониторинг угроз ИИ")
     st.markdown("Аналитика распределения инцидентов по ключевым регионам: **Россия, США, Китай**.")
@@ -135,9 +133,7 @@ if page == "🌍 Глобальный мониторинг":
     threat_counts = df_geo.groupby(['Country', 'Cluster']).size().unstack(fill_value=0)
     st.bar_chart(threat_counts)
 
-# =====================================================================
-# СТРАНИЦА 2: НЕЙРОСЕТЬ И ДЕТЕКТОР АНОМАЛИЙ (OOD DETECTION)
-# =====================================================================
+
 elif page == "🔍 Анализ инцидента":
     st.title("Классификация угроз нейросетью")
     st.write("Введите текст новости на английском языке для автоматического определения типа угрозы.")
