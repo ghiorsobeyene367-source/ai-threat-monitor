@@ -127,16 +127,21 @@ if page == "🌍 Глобальный мониторинг":
         if count > 0:
             map_data.append({
                 "Страна": country,
-                "latitude": coords[0],
-                "longitude": coords[1],
-                "Размер": count * 5000, # Увеличиваем размер точек визуально
+                "lat": coords[0],
+                "lon": coords[1],
+                "size": count * 5000,
+                "color": "#ff4b4b"
             })
             
     df_map = pd.DataFrame(map_data)
     
     if not df_map.empty:
-        # Встроенная, нативная карта Streamlit
-        st.map(df_map, latitude="latitude", longitude="longitude", size="Размер", color="#ff4b4b")
+        try:
+            # Встроенная, нативная карта Streamlit (новые версии)
+            st.map(df_map, latitude="lat", longitude="lon", size="size", color="color")
+        except Exception:
+            # Безопасный режим: если версия Streamlit старая, рисуем простую карту
+            st.map(df_map[["lat", "lon"]])
     else:
         st.info("Нет гео-данных для отображения карты.")
     
