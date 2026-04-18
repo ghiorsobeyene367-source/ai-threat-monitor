@@ -122,7 +122,7 @@ if page == "🌍 Глобальный мониторинг":
     st.subheader("Карта интенсивности угроз")
     geo_coords = {'Россия': [61.52, 105.31], 'США': [37.09, -95.71], 'Китай': [35.86, 104.19]}
     m = folium.Map(location=[40, 0], zoom_start=2, tiles=None)
-        folium.TileLayer(
+folium.TileLayer(
         tiles='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
         attr=' ', 
         name='positron'
