@@ -7,13 +7,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import joblib
 from transformers import AutoTokenizer, AutoModel
-from sklearn.metrics.pairwise import cosine_similarity 
-import plotly.express as px # 🆕 Подключаем Plotly для красивой карты
+from sklearn.metrics.pairwise import cosine_similarity
 
-# --- 1. НАСТРОЙКИ СТРАНИЦЫ ---
+
 st.set_page_config(page_title="AI Threat Monitor", page_icon="🛡️", layout="wide")
 
-# --- 2. АРХИТЕКТУРА НЕЙРОСЕТИ ---
 class AIThreatNet(nn.Module):
     def __init__(self, input_size=768, num_classes=4):
         super(AIThreatNet, self).__init__()
@@ -32,7 +30,7 @@ class AIThreatNet(nn.Module):
         x = self.fc3(x)
         return x
 
-# --- 3. ЗАГРУЗКА МОДЕЛЕЙ И ДАННЫХ ---
+
 @st.cache_resource
 def load_models():
     device = torch.device('cpu') 
@@ -68,7 +66,7 @@ CLUSTER_NAMES = {
     3: "Deepfake и медиафальсификации"
 }
 
-# --- 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+
 def clean_text(text):
     if not isinstance(text, str): return ""
     text = re.sub(r'<[^>]+>', ' ', text)
@@ -99,92 +97,63 @@ def render_metric(label, value):
         unsafe_allow_html=True
     )
 
-# --- 5. БОКОВАЯ ПАНЕЛЬ ---
 st.sidebar.title("🛡️ AI Threat System")
-st.sidebar.info("Система мониторинга злонамеренного использования ИИ в инфопространстве.")
+st.sidebar.info("Информационно-аналитическая система мониторинга злонамеренного использования ИИ")
 page = st.sidebar.radio("Навигация:", ["🌍 Глобальный мониторинг", "🔍 Анализ инцидента"])
 
-# =====================================================================
-# СТРАНИЦА 1: КАРТА И СТАТИСТИКА
-# =====================================================================
+
 if page == "🌍 Глобальный мониторинг":
     st.title("Глобальный мониторинг угроз ИИ")
     
+
     col1, col2, col3 = st.columns(3)
     with col1:
         render_metric("Всего инцидентов", f"{len(df_geo)}")
     with col2:
         render_metric("Топ угроза", df_geo['Cluster'].mode()[0])
     with col3:
-        render_metric("Активных регионов", f"{df_geo['Country'].nunique()}")
+        render_metric("Активных регионов", df_geo['Country'].nunique())
     
     st.markdown("---")
     
+
     st.subheader("Карта интенсивности угроз")
     geo_coords = {'Россия': [61.52, 105.31], 'США': [37.09, -95.71], 'Китай': [35.86, 104.19]}
+    m = folium.Map(location=[40, 0], zoom_start=2, tiles='CartoDB positron')
     
-    # Подготавливаем данные для интерактивной карты Plotly
-    map_data = []
     for country, coords in geo_coords.items():
         subset = df_geo[df_geo['Country'] == country]
-        count = len(subset)
-        if count > 0:
-            top_threat = subset['Cluster'].mode()[0]
-            map_data.append({
-                "Страна": country,
-                "lat": coords[0],
-                "lon": coords[1],
-                "Инцидентов": count,
-                "Главная угроза": top_threat,
-                "Размер": 15 # Фиксированный размер маркеров
-            })
+        if not subset.empty:
+            top_threats = subset['Cluster'].value_counts().head(3)
+            popup_text = f"<b>{country}</b><br><hr>"
+            for threat, count in top_threats.items():
+                popup_text += f"• {threat}: {count}<br>"
             
-    df_map = pd.DataFrame(map_data)
+            folium.Marker(
+                location=coords,
+                popup=folium.Popup(popup_text, max_width=300),
+                icon=folium.Icon(color='red', icon='info-sign')
+            ).add_to(m)
     
-    if not df_map.empty:
-        # Рисуем карту через Plotly
-        fig = px.scatter_mapbox(
-            df_map,
-            lat="lat",
-            lon="lon",
-            hover_name="Страна",
-            hover_data={
-                "lat": False, 
-                "lon": False, 
-                "Инцидентов": True, 
-                "Главная угроза": True, 
-                "Размер": False
-            },
-            size="Размер",
-            color_discrete_sequence=["#ff4b4b"], # Красный цвет точек
-            zoom=1.2,
-            height=500
-        )
-        
-        
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("Нет гео-данных для отображения карты.")
+    st_folium(m, width=1200, height=500)
+    
 
-    st.markdown("---")
     st.subheader("Статистика по странам")
     threat_counts = df_geo.groupby(['Country', 'Cluster']).size().unstack(fill_value=0)
     st.bar_chart(threat_counts)
 
-# =====================================================================
-# СТРАНИЦА 2: НЕЙРОСЕТЬ И ДЕТЕКТОР АНОМАЛИЙ (OOD DETECTION)
-# =====================================================================
+
 elif page == "🔍 Анализ инцидента":
     st.title("Классификация угроз нейросетью")
     st.write("Введите текст новости на английском языке для автоматического определения типа угрозы.")
     
     st.markdown("---")
-    st.subheader("⚙️ Настройки детектора аномалий (OOD)")
-    st.info("Система измеряет семантическое косинусное сходство (Cosine Similarity) вашего текста с эталонными центрами известных киберугроз.")
+    st.subheader("⚙️ Настройки детектора аномалий")
+    st.info("Настройка детектора аномалий: чем выше процент, тем строже условия для предсказания. Чем ниже процент, тем шире диапазон для отнесения текста к кластерам.")
     threshold = st.slider(
-        "Минимальный порог семантического сходства (%):", 
+        "Минимальный порог сходства с базой данных (%):", 
         min_value=10, max_value=80, value=30, step=5,
-        help="Если текст находится слишком далеко от всех кластеров угроз в векторном пространстве (например, это рецепт или случайный текст), он будет отсеян."
+        help="Текст, удаленный от всех кластеров угроз в векторном пространстве (например, рецепт) будет отсеян."
     ) / 100.0
     st.markdown("---")
     
@@ -193,13 +162,16 @@ elif page == "🔍 Анализ инцидента":
     if st.button("Проанализировать", type="primary"):
         if input_text:
             with st.spinner("Извлечение семантики и расчет расстояний..."):
+                # 1. Получаем эмбеддинг
                 emb = get_embedding(input_text)
                 emb_np = emb.cpu().numpy()
                 
+                # 2. Расчет семантического сходства (Косинусное расстояние до центров KMeans)
                 cluster_centers = kmeans.cluster_centers_
                 sims = cosine_similarity(emb_np, cluster_centers)[0]
-                max_sim = np.max(sims) 
+                max_sim = np.max(sims) # Максимальное сходство с одним из 4х кластеров
                 
+                # 3. Предсказание нейросети (для уверенности модели)
                 logits = model(emb)
                 probs = F.softmax(logits, dim=1)[0]
                 pred_idx = torch.argmax(logits, 1).item()
@@ -207,11 +179,16 @@ elif page == "🔍 Анализ инцидента":
                 
                 st.markdown("### 🎯 Результат классификации:")
                 
+                # ЛОГИКА ДЕТЕКТОРА:
                 if max_sim < threshold:
+                    # Текст не похож ни на одну из угроз (Out-of-Distribution)
                     st.error(f"**Статус:** ⚠️ НЕРЕЛЕВАНТНЫЙ ТЕКСТ ИЛИ НЕИЗВЕСТНАЯ АНОМАЛИЯ")
-                    st.warning(f"Текст семантически далек от изученных инцидентов ИБ.\n\nМаксимальное сходство с базой угроз: **{max_sim*100:.1f}%** (Требуемый порог: {threshold*100:.0f}%).")
+                    st.warning(f"Текст семантически далек от изученных инцидентов.\n\nМаксимальное сходство с базой угроз: **{max_sim*100:.1f}%** (Требуемый порог: {threshold*100:.0f}%).")
+                    
+                    # Показываем, что нейросеть при этом могла ошибочно быть "уверена"
                     st.caption(f"Справка: Классификатор попытался отнести текст к «{CLUSTER_NAMES[pred_idx]}», но детектор аномалий заблокировал вывод.")
                 else:
+                    # Текст прошел проверку сходства
                     if confidence > 0.8:
                         st.success(f"**Категория:** {CLUSTER_NAMES[pred_idx]}")
                     else:
@@ -219,11 +196,15 @@ elif page == "🔍 Анализ инцидента":
                         
                     st.progress(confidence, text=f"Уверенность нейросети: {confidence*100:.1f}% | Сходство с кластером: {max_sim*100:.1f}%")
                     
-                    st.markdown("#### Подробное распределение вероятностей:")
-                    chart_data = pd.DataFrame({
-                        'Тип угрозы': [CLUSTER_NAMES[i] for i in range(4)],
-                        'Вероятность (%)': [p.item()*100 for p in probs]
-                    })
-                    st.bar_chart(chart_data.set_index('Тип угрозы'))
+                st.markdown("#### Подробное распределение вероятностей:")
+                prob_dict = {CLUSTER_NAMES[i]: float(probs[i])*100 for i in range(4)}
+                
+                # Сортируем по убыванию вероятности
+                sorted_probs = dict(sorted(prob_dict.items(), key=lambda item: item[1], reverse=True))
+                
+                for threat, prob in sorted_probs.items():
+                    col1, col2 = st.columns([3, 1])
+                    col1.write(threat)
+                    col2.write(f"**{prob:.1f}%**")
         else:
             st.warning("Пожалуйста, введите текст.")
