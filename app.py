@@ -132,9 +132,8 @@ if page == "🌍 Глобальный мониторинг":
     with col3:
         render_metric("Активных регионов", df_geo['Country'].nunique())
     
-    st.markdown("---")
+st.markdown("---")
     
-
     st.subheader("Карта интенсивности угроз")
     geo_coords = {'Россия': [61.52, 105.31], 'США': [37.09, -95.71], 'Китай': [35.86, 104.19]}
     
