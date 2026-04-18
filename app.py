@@ -7,7 +7,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import joblib
 from transformers import AutoTokenizer, AutoModel
-import pydeck as pdk
 from sklearn.metrics.pairwise import cosine_similarity # Добавлено для детектора аномалий
 
 
@@ -117,26 +116,29 @@ if page == "🌍 Глобальный мониторинг":
     
     st.markdown("---")
     
-
     st.subheader("Карта интенсивности угроз")
     geo_coords = {'Россия': [61.52, 105.31], 'США': [37.09, -95.71], 'Китай': [35.86, 104.19]}
-    m = folium.Map(location=[40, 0], zoom_start=2, tiles='CartoDB positron')
     
+    # Подготавливаем данные для встроенной карты st.map
+    map_data = []
     for country, coords in geo_coords.items():
         subset = df_geo[df_geo['Country'] == country]
-        if not subset.empty:
-            top_threats = subset['Cluster'].value_counts().head(3)
-            popup_text = f"<b>{country}</b><br><hr>"
-            for threat, count in top_threats.items():
-                popup_text += f"• {threat}: {count}<br>"
+        count = len(subset)
+        if count > 0:
+            map_data.append({
+                "Страна": country,
+                "latitude": coords[0],
+                "longitude": coords[1],
+                "Размер": count * 5000, # Увеличиваем размер точек визуально
+            })
             
-            folium.Marker(
-                location=coords,
-                popup=folium.Popup(popup_text, max_width=300),
-                icon=folium.Icon(color='red', icon='info-sign')
-            ).add_to(m)
+    df_map = pd.DataFrame(map_data)
     
-    st_folium(m, width=1200, height=500)
+    if not df_map.empty:
+        # Встроенная, нативная карта Streamlit
+        st.map(df_map, latitude="latitude", longitude="longitude", size="Размер", color="#ff4b4b")
+    else:
+        st.info("Нет гео-данных для отображения карты.")
     
 
     st.subheader("Статистика по странам")
