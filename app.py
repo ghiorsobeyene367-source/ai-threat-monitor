@@ -161,9 +161,6 @@ if page == "🌍 Глобальный мониторинг":
             height=500
         )
         
-        # Задаем темный стиль подложки карты
-        fig.update_layout(mapbox_style="carto-darkmatter") 
-        fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
         
         st.plotly_chart(fig, use_container_width=True)
     else:
