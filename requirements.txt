@@ -5,3 +5,4 @@ torch
 transformers
 scikit-learn
 joblib
+plotly
