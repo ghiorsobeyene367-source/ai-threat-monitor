@@ -124,11 +124,11 @@ if page == "🌍 Глобальный мониторинг":
 # Инициализация карты без встроенного слоя
     m = folium.Map(location=[40, 0], zoom_start=2, tiles=None)
     
-    # Подключаем темную тему вручную и "стираем" водяной знак с помощью пустого attr
+    # Подключаем СВЕТЛУЮ тему вручную и "стираем" водяной знак с помощью пустого attr
     folium.TileLayer(
-        tiles='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        tiles='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
         attr=' ', 
-        name='dark_matter'
+        name='positron'
     ).add_to(m)
     
     for country, coords in geo_coords.items():
