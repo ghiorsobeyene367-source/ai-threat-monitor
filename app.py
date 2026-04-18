@@ -88,6 +88,16 @@ def get_embedding(text):
         embedding = sum_emb / sum_mask
     return embedding
 
+def render_metric(label, value):
+    st.markdown(
+        f"""
+        <div style="display: flex; flex-direction: column; margin-bottom: 1rem;">
+            <span style="font-size: 14px; opacity: 0.7;">{label}</span>
+            <span style="font-size: 26px; font-weight: bold; line-height: 1.2; word-wrap: break-word; white-space: normal;">{value}</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 st.sidebar.title("🛡️ AI Threat System")
 st.sidebar.info("Информационно-аналитическая система мониторинга злонамеренного использования ИИ")
@@ -99,9 +109,12 @@ if page == "🌍 Глобальный мониторинг":
     
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Всего инцидентов", f"{len(df_geo)}")
-    col2.metric("Топ угроза", df_geo['Cluster'].mode()[0])
-    col3.metric("Активных регионов", df_geo['Country'].nunique())
+    with col1:
+        render_metric("Всего инцидентов", f"{len(df_geo)}")
+    with col2:
+        render_metric("Топ угроза", df_geo['Cluster'].mode()[0])
+    with col3:
+        render_metric("Активных регионов", df_geo['Country'].nunique())
     
     st.markdown("---")
     
