@@ -13,7 +13,17 @@ from sklearn.metrics.pairwise import cosine_similarity # Добавлено дл
 
 
 st.set_page_config(page_title="AI Threat Monitor", page_icon="🛡️", layout="wide")
-
+st.markdown("""
+<style>
+div[data-testid="stMetricValue"] > div {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    font-size: 1.4rem !important; /* Делаем шрифт чуть компактнее для длинных названий */
+    line-height: 1.2 !important;
+    padding-top: 5px;
+}
+</style>
+""", unsafe_allow_html=True)
 
 class AIThreatNet(nn.Module):
     def __init__(self, input_size=768, num_classes=4):
