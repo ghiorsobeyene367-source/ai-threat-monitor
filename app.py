@@ -121,7 +121,7 @@ if page == "🌍 Глобальный мониторинг":
 
     st.subheader("Карта интенсивности угроз")
     geo_coords = {'Россия': [61.52, 105.31], 'США': [37.09, -95.71], 'Китай': [35.86, 104.19]}
-    m = folium.Map(location=[40, 0], zoom_start=2, tiles='CartoDB positron')
+    m = folium.Map(location=[40, 0], zoom_start=2, tiles='CartoDB dark_matter')
     
     for country, coords in geo_coords.items():
         subset = df_geo[df_geo['Country'] == country]
