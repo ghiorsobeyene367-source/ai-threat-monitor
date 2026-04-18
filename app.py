@@ -121,11 +121,14 @@ if page == "🌍 Глобальный мониторинг":
 
     st.subheader("Карта интенсивности угроз")
     geo_coords = {'Россия': [61.52, 105.31], 'США': [37.09, -95.71], 'Китай': [35.86, 104.19]}
+# Инициализация карты без встроенного слоя
     m = folium.Map(location=[40, 0], zoom_start=2, tiles=None)
-folium.TileLayer(
-        tiles='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    
+    # Подключаем темную тему вручную и "стираем" водяной знак с помощью пустого attr
+    folium.TileLayer(
+        tiles='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
         attr=' ', 
-        name='positron'
+        name='dark_matter'
     ).add_to(m)
     
     for country, coords in geo_coords.items():
