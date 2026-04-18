@@ -5,5 +5,4 @@ torch
 transformers
 scikit-learn
 joblib
-folium
-streamlit-folium
+pydeck
