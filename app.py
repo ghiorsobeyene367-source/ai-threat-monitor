@@ -8,6 +8,8 @@ import torch.nn.functional as F
 import joblib
 from transformers import AutoTokenizer, AutoModel
 from sklearn.metrics.pairwise import cosine_similarity
+import folium
+from streamlit_folium import st_folium
 
 
 st.set_page_config(page_title="AI Threat Monitor", page_icon="🛡️", layout="wide")
@@ -114,12 +116,10 @@ if page == "🌍 Глобальный мониторинг":
     with col3:
         render_metric("Активных регионов", df_geo['Country'].nunique())
     
-    st.markdown("---")
+st.markdown("---")
     
-
     st.subheader("Карта интенсивности угроз")
     geo_coords = {'Россия': [61.52, 105.31], 'США': [37.09, -95.71], 'Китай': [35.86, 104.19]}
-    m = folium.Map(location=[40, 0], zoom_start=2, tiles='CartoDB positron')
     
     for country, coords in geo_coords.items():
         subset = df_geo[df_geo['Country'] == country]
@@ -132,12 +132,12 @@ if page == "🌍 Глобальный мониторинг":
             folium.Marker(
                 location=coords,
                 popup=folium.Popup(popup_text, max_width=300),
-                icon=folium.Icon(color='red', icon='info-sign')
+                icon=folium.Icon(color='red', icon='warning', prefix='fa')
             ).add_to(m)
     
     st_folium(m, width=1200, height=500)
-    
 
+    st.markdown("---")
     st.subheader("Статистика по странам")
     threat_counts = df_geo.groupby(['Country', 'Cluster']).size().unstack(fill_value=0)
     st.bar_chart(threat_counts)
