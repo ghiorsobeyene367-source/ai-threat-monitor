@@ -5,4 +5,5 @@ torch
 transformers
 scikit-learn
 joblib
-plotly
+folium
+streamlit-folium
