@@ -119,29 +119,21 @@ if page == "🌍 Глобальный мониторинг":
     st.subheader("Карта интенсивности угроз")
     geo_coords = {'Россия': [61.52, 105.31], 'США': [37.09, -95.71], 'Китай': [35.86, 104.19]}
     
-    # Подготавливаем данные для встроенной карты st.map
+    # Подготавливаем данные для встроенной карты (максимально безопасный формат)
     map_data = []
     for country, coords in geo_coords.items():
         subset = df_geo[df_geo['Country'] == country]
-        count = len(subset)
-        if count > 0:
+        if not subset.empty:
             map_data.append({
-                "Страна": country,
                 "lat": coords[0],
-                "lon": coords[1],
-                "size": count * 5000,
-                "color": "#ff4b4b"
+                "lon": coords[1]
             })
             
     df_map = pd.DataFrame(map_data)
     
     if not df_map.empty:
-        try:
-            # Встроенная, нативная карта Streamlit (новые версии)
-            st.map(df_map, latitude="lat", longitude="lon", size="size", color="color")
-        except Exception:
-            # Безопасный режим: если версия Streamlit старая, рисуем простую карту
-            st.map(df_map[["lat", "lon"]])
+        # Простой и на 100% надежный вызов карты для любой версии Streamlit
+        st.map(df_map)
     else:
         st.info("Нет гео-данных для отображения карты.")
     
