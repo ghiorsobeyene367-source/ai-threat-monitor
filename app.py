@@ -127,49 +127,49 @@ if page == "🌍 Глобальный мониторинг":
     st.bar_chart(threat_counts)
 
 
-elif page == "🔍 Анализ инцидента":
-    st.title("Классификация угроз нейросетью")
-    st.write("Введите текст новости на английском языке для автоматического определения типа угрозы.")
+elif page == "🔍 Анализ инцидента (Нейросеть)":
+    st.title("Модератор: Анализ новых инцидентов")
+    st.markdown("Вставьте текст новости или отчета, и обученная нейронная сеть (PyTorch) определит, к какому кластеру злонамеренного использования ИИ он относится.")
     
-    st.markdown("---")
-    st.subheader("⚙️ Настройки детектора нулевого дня (Zero-Day)")
-    threshold = st.slider(
-        "Порог уверенности для фильтрации аномалий (%):", 
-        min_value=30, max_value=95, value=55, step=5,
-        help="Если максимальная уверенность нейросети ниже этого порога, угроза будет помечена как неизвестная (подозрение на угрозу нулевого дня)."
-    ) / 100.0
-    st.markdown("---")
+    user_input = st.text_area("Текст инцидента (на английском):", height=200, 
+                              placeholder="Например: Hackers used deepfake video technology to impersonate the CEO and steal funds...")
     
-    input_text = st.text_area("Текст новости:", height=200)
-    
-    if st.button("Проанализировать", type="primary"):
-        if input_text:
-            with st.spinner("Обработка данных..."):
-                emb = get_embedding(input_text)
-                logits = model(emb)
-                probs = F.softmax(logits, dim=1)[0]
-                pred_idx = torch.argmax(logits, 1).item()
-                confidence = probs[pred_idx].item()
+    if st.button("КЛАССИФИЦИРОВАТЬ УГРОЗУ", type="primary"):
+        if len(user_input.split()) < 5:
+            st.warning("⚠️ Пожалуйста, введите более подробный текст (минимум 5 слов).")
+        else:
+            with st.spinner("🧠 Нейросеть анализирует семантику текста..."):
+
+                embedding = get_embedding(user_input)
                 
+
+                with torch.no_grad():
+                    logits = model(embedding)
+                    probs = F.softmax(logits, dim=1)[0]
+                    pred_class = torch.argmax(logits, 1).item()
+                    confidence = probs[pred_class].item()
+                
+
                 st.markdown("### 🎯 Результат классификации:")
                 
-                if confidence < threshold:
-                    # Если модель не уверена — бьем тревогу
-                    st.error(f"**Категория:** ⚠️ НЕИЗВЕСТНАЯ УГРОЗА / АНОМАЛИЯ (Zero-Day)")
-                    st.warning(f"Модель сомневается! Максимальная вероятность ({confidence*100:.1f}%) ниже заданного порога безопасности ({threshold*100:.0f}%). Система рекомендует передать инцидент на ручной анализ ИБ-специалистам.")
+                # Цветные плашки в зависимости от уверенности
+                if confidence > 0.8:
+                    st.success(f"**Категория:** {CLUSTER_NAMES[pred_class]}")
+                elif confidence > 0.5:
+                    st.info(f"**Категория:** {CLUSTER_NAMES[pred_class]}")
                 else:
-                    if confidence > 0.8:
-                        st.success(f"**Категория:** {CLUSTER_NAMES[pred_idx]}")
-                    else:
-                        st.info(f"**Категория:** {CLUSTER_NAMES[pred_idx]}")
-                        
-                st.progress(confidence, text=f"Максимальная уверенность модели: {confidence*100:.1f}%")
+                    st.warning(f"**Категория (Низкая уверенность):** {CLUSTER_NAMES[pred_class]}")
                 
+                st.progress(confidence, text=f"Уверенность модели: {confidence*100:.1f}%")
+                
+
                 st.markdown("#### Подробное распределение вероятностей:")
-                chart_data = pd.DataFrame({
-                    'Тип угрозы': [CLUSTER_NAMES[i] for i in range(4)],
-                    'Вероятность (%)': [p.item()*100 for p in probs]
-                })
-                st.bar_chart(chart_data.set_index('Тип угрозы'))
-        else:
-            st.warning("Пожалуйста, введите текст.")
+                prob_dict = {CLUSTER_NAMES[i]: float(probs[i])*100 for i in range(4)}
+                
+                # Сортируем по убыванию вероятности
+                sorted_probs = dict(sorted(prob_dict.items(), key=lambda item: item[1], reverse=True))
+                
+                for threat, prob in sorted_probs.items():
+                    col1, col2 = st.columns([3, 1])
+                    col1.write(threat)
+                    col2.write(f"**{prob:.1f}%**")
