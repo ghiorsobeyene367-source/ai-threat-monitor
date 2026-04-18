@@ -13,6 +13,22 @@ from streamlit_folium import st_folium
 
 
 st.set_page_config(page_title="AI Threat Monitor", page_icon="🛡️", layout="wide")
+st.markdown("""
+<style>
+/* Чиним обрезание текста в st.metric */
+div[data-testid="stMetricValue"] > div {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    font-size: 1.4rem !important;
+    line-height: 1.2 !important;
+    padding-top: 5px;
+}
+/* Скрываем копирайт и водяные знаки на карте Folium */
+.leaflet-control-attribution {
+    display: none !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
 class AIThreatNet(nn.Module):
     def __init__(self, input_size=768, num_classes=4):
@@ -121,15 +137,8 @@ if page == "🌍 Глобальный мониторинг":
 
     st.subheader("Карта интенсивности угроз")
     geo_coords = {'Россия': [61.52, 105.31], 'США': [37.09, -95.71], 'Китай': [35.86, 104.19]}
-# Инициализация карты без встроенного слоя
-    m = folium.Map(location=[40, 0], zoom_start=2, tiles=None)
     
-    # Подключаем темную тему вручную и "стираем" водяной знак с помощью пустого attr
-    folium.TileLayer(
-        tiles='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        attr=' ', 
-        name='dark_matter'
-    ).add_to(m)
+m = folium.Map(location=[40, 0], zoom_start=2, tiles='CartoDB positron')
     
     for country, coords in geo_coords.items():
         subset = df_geo[df_geo['Country'] == country]
@@ -142,12 +151,12 @@ if page == "🌍 Глобальный мониторинг":
             folium.Marker(
                 location=coords,
                 popup=folium.Popup(popup_text, max_width=300),
-                icon=folium.Icon(color='red', icon='info-sign')
+                icon=folium.Icon(color='red', icon='warning', prefix='fa')
             ).add_to(m)
     
     st_folium(m, width=1200, height=500)
     
-
+    st.markdown("---")
     st.subheader("Статистика по странам")
     threat_counts = df_geo.groupby(['Country', 'Cluster']).size().unstack(fill_value=0)
     st.bar_chart(threat_counts)
