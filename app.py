@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import joblib
 from transformers import AutoTokenizer, AutoModel
 from sklearn.metrics.pairwise import cosine_similarity # Добавлено для детектора аномалий
-
+import plotly.express as px
 
 st.set_page_config(page_title="AI Threat Monitor", page_icon="🛡️", layout="wide")
 
@@ -119,23 +119,43 @@ if page == "🌍 Глобальный мониторинг":
     st.subheader("Карта интенсивности угроз")
     geo_coords = {'Россия': [61.52, 105.31], 'США': [37.09, -95.71], 'Китай': [35.86, 104.19]}
     
-    # Подготавливаем данные для встроенной карты (максимально безопасный формат)
+    # Подготавливаем данные для интерактивной карты Plotly
     map_data = []
     for country, coords in geo_coords.items():
         subset = df_geo[df_geo['Country'] == country]
-        if not subset.empty:
+        count = len(subset)
+        if count > 0:
+            top_threat = subset['Cluster'].mode()[0]
             map_data.append({
+                "Страна": country,
                 "lat": coords[0],
-                "lon": coords[1]
+                "lon": coords[1],
+                "Инцидентов": count,
+                "Главная угроза": top_threat,
+                "Размер": 15 # Фиксированный размер маркеров
             })
             
     df_map = pd.DataFrame(map_data)
     
     if not df_map.empty:
-        # Простой и на 100% надежный вызов карты для любой версии Streamlit
-        st.map(df_map)
-    else:
-        st.info("Нет гео-данных для отображения карты.")
+        # Рисуем карту через Plotly
+        fig = px.scatter_mapbox(
+            df_map,
+            lat="lat",
+            lon="lon",
+            hover_name="Страна",
+            hover_data={
+                "lat": False, 
+                "lon": False, 
+                "Инцидентов": True, 
+                "Главная угроза": True, 
+                "Размер": False
+            },
+            size="Размер",
+            color_discrete_sequence=["#ff4b4b"], # Красный цвет точек
+            zoom=1.2,
+            height=500
+        )
     
 
     st.subheader("Статистика по странам")
