@@ -5,4 +5,3 @@ torch
 transformers
 scikit-learn
 joblib
-pydeck
