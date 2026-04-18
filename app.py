@@ -7,8 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import joblib
 from transformers import AutoTokenizer, AutoModel
-import folium
-from streamlit_folium import st_folium
+import pydeck as pdk
 from sklearn.metrics.pairwise import cosine_similarity # Добавлено для детектора аномалий
 
 
@@ -119,25 +118,66 @@ if page == "🌍 Глобальный мониторинг":
     st.markdown("---")
     
 
-    st.subheader("Карта интенсивности угроз")
-    geo_coords = {'Россия': [61.52, 105.31], 'США': [37.09, -95.71], 'Китай': [35.86, 104.19]}
-    m = folium.Map(location=[40, 0], zoom_start=2, tiles='CartoDB positron')
+    st.subheader("Глобальная 3D-карта киберинцидентов")
     
+    # Координаты для карты
+    geo_coords = {'Россия': [61.52, 105.31], 'США': [37.09, -95.71], 'Китай': [35.86, 104.19]}
+    
+    # 🆕 Подготавливаем DataFrame для PyDeck
+    map_data = []
     for country, coords in geo_coords.items():
         subset = df_geo[df_geo['Country'] == country]
-        if not subset.empty:
-            top_threats = subset['Cluster'].value_counts().head(3)
-            popup_text = f"<b>{country}</b><br><hr>"
-            for threat, count in top_threats.items():
-                popup_text += f"• {threat}: {count}<br>"
+        count = len(subset)
+        if count > 0:
+            top_threat = subset['Cluster'].mode()[0]
+            map_data.append({
+                "Страна": country,
+                "lat": coords[0],
+                "lon": coords[1],
+                "Инцидентов": count,
+                "Угроза": top_threat,
+                "color": [220, 20, 60, 220] # Красный "тревожный" цвет RGBA
+            })
             
-            folium.Marker(
-                location=coords,
-                popup=folium.Popup(popup_text, max_width=300),
-                icon=folium.Icon(color='red', icon='info-sign')
-            ).add_to(m)
+    df_map = pd.DataFrame(map_data)
     
-    st_folium(m, width=1200, height=500)
+    if not df_map.empty:
+        # Слой 3D-столбцов
+        layer = pdk.Layer(
+            "ColumnLayer",
+            data=df_map,
+            get_position=["lon", "lat"],
+            get_elevation="Инцидентов",
+            elevation_scale=300000, # Настройка высоты столбцов (можно менять)
+            radius=400000,          # Ширина столбцов
+            get_fill_color="color",
+            pickable=True,
+            auto_highlight=True,
+        )
+
+        # Настройки камеры (Pitch 45 градусов дает 3D эффект)
+        view_state = pdk.ViewState(
+            latitude=45.0,
+            longitude=0.0,
+            zoom=1.0,
+            pitch=45,
+            bearing=10
+        )
+
+        # Отрисовка интерактивной палубы (Deck)
+        r = pdk.Deck(
+            layers=[layer],
+            initial_view_state=view_state,
+            tooltip={
+                "html": "<b>{Страна}</b><br>Зафиксировано: {Инцидентов} шт.<br>Доминирует: {Угроза}",
+                "style": {"backgroundColor": "#222222", "color": "white", "borderRadius": "5px", "padding": "10px"}
+            },
+            map_style="mapbox://styles/mapbox/dark-v11" # Строгая темная тема
+        )
+        
+        st.pydeck_chart(r)
+    else:
+        st.info("Нет гео-данных для отображения карты.")
     
 
     st.subheader("Статистика по странам")
