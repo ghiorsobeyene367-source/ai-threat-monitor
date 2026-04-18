@@ -118,7 +118,7 @@ if page == "🌍 Глобальный мониторинг":
             folium.Marker(
                 location=coords,
                 popup=folium.Popup(popup_text, max_width=300),
-                icon=folium.Icon(color='red', icon='info-sign', prefix='fa')
+                icon=folium.Icon(color='red', icon='info-sign')
             ).add_to(m)
     
     st_folium(m, width=1200, height=500)
