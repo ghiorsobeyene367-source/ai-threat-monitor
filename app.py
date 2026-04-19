@@ -1,3 +1,4 @@
+#Импорты
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -11,7 +12,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import folium
 from streamlit_folium import st_folium
 
-
+#Дополнительные настройки
 st.set_page_config(page_title="AI Threat Monitor", page_icon="🛡️", layout="wide")
 
 class AIThreatNet(nn.Module):
@@ -103,7 +104,7 @@ st.sidebar.title("🛡️ AI Threat System")
 st.sidebar.info("Информационно-аналитическая система мониторинга злонамеренного использования ИИ")
 page = st.sidebar.radio("Навигация:", ["🌍 Глобальный мониторинг", "🔍 Анализ инцидента"])
 
-
+#Первая страница интерфейса
 if page == "🌍 Глобальный мониторинг":
     st.title("Глобальный мониторинг угроз ИИ")
     
@@ -121,10 +122,10 @@ if page == "🌍 Глобальный мониторинг":
 
     st.subheader("Карта интенсивности угроз")
     geo_coords = {'Россия': [61.52, 105.31], 'США': [37.09, -95.71], 'Китай': [35.86, 104.19]}
-# Инициализация карты без встроенного слоя
+
     m = folium.Map(location=[40, 0], zoom_start=2, tiles=None)
     
-    # Подключаем СВЕТЛУЮ тему вручную и "стираем" водяной знак с помощью пустого attr
+
     folium.TileLayer(
         tiles='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
         attr=' ', 
@@ -152,7 +153,7 @@ if page == "🌍 Глобальный мониторинг":
     threat_counts = df_geo.groupby(['Country', 'Cluster']).size().unstack(fill_value=0)
     st.bar_chart(threat_counts)
 
-
+#Вторая страница интерфейса
 elif page == "🔍 Анализ инцидента":
     st.title("Классификация угроз нейросетью")
     st.write("Введите текст новости на английском языке для автоматического определения типа угрозы.")
@@ -172,16 +173,16 @@ elif page == "🔍 Анализ инцидента":
     if st.button("Проанализировать", type="primary"):
         if input_text:
             with st.spinner("Извлечение семантики и расчет расстояний..."):
-                # 1. Получаем эмбеддинг
+
                 emb = get_embedding(input_text)
                 emb_np = emb.cpu().numpy()
                 
-                # 2. Расчет семантического сходства (Косинусное расстояние до центров KMeans)
+
                 cluster_centers = kmeans.cluster_centers_
                 sims = cosine_similarity(emb_np, cluster_centers)[0]
                 max_sim = np.max(sims) # Максимальное сходство с одним из 4х кластеров
                 
-                # 3. Предсказание нейросети (для уверенности модели)
+
                 logits = model(emb)
                 probs = F.softmax(logits, dim=1)[0]
                 pred_idx = torch.argmax(logits, 1).item()
@@ -189,16 +190,16 @@ elif page == "🔍 Анализ инцидента":
                 
                 st.markdown("### 🎯 Результат классификации:")
                 
-                # ЛОГИКА ДЕТЕКТОРА:
+
                 if max_sim < threshold:
-                    # Текст не похож ни на одну из угроз (Out-of-Distribution)
+
                     st.error(f"**Статус:** ⚠️ НЕРЕЛЕВАНТНЫЙ ТЕКСТ ИЛИ НЕИЗВЕСТНАЯ АНОМАЛИЯ")
                     st.warning(f"Текст семантически далек от изученных инцидентов.\n\nМаксимальное сходство с базой угроз: **{max_sim*100:.1f}%** (Требуемый порог: {threshold*100:.0f}%).")
                     
-                    # Показываем, что нейросеть при этом могла ошибочно быть "уверена"
+
                     st.caption(f"Справка: Классификатор попытался отнести текст к «{CLUSTER_NAMES[pred_idx]}», но детектор аномалий заблокировал вывод.")
                 else:
-                    # Текст прошел проверку сходства
+
                     if confidence > 0.8:
                         st.success(f"**Категория:** {CLUSTER_NAMES[pred_idx]}")
                     else:
@@ -209,7 +210,7 @@ elif page == "🔍 Анализ инцидента":
                 st.markdown("#### Подробное распределение вероятностей:")
                 prob_dict = {CLUSTER_NAMES[i]: float(probs[i])*100 for i in range(4)}
                 
-                # Сортируем по убыванию вероятности
+
                 sorted_probs = dict(sorted(prob_dict.items(), key=lambda item: item[1], reverse=True))
                 
                 for threat, prob in sorted_probs.items():
